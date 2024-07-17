@@ -1,0 +1,3 @@
+limedev[test,package,readme] >= 0.6.1
+pre-commit >= 3.6.0
+tox >= 4.5.1

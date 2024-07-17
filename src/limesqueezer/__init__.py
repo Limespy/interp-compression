@@ -15,7 +15,7 @@ As you probably expected, ``compress`` takes in arrays of data to be compressed 
 
 ``decompress`` takes in data arrays to be decompressed and returns interpolation function.
 With this function you can then estimate any values within the range of the input data.
-Since this operates on data arrays, you can use ``decompress`` for interpolation without using the ``compress`` function in first place. 
+Since this operates on data arrays, you can use ``decompress`` for interpolation without using the ``compress`` function in first place.
 
 Compression is done by fitting some function(s) to the data.
 
@@ -63,7 +63,7 @@ Similarly the compressor can be selected with a keyword argument::
 
 Compressor keyword accepts a custom compressor function.
 
-    x_compressed, y_compressed = ls.compress(input_x, input_y, 
+    x_compressed, y_compressed = ls.compress(input_x, input_y,
                                              tolerances = (1e-3, 1e-4, 1),
                                              compressor = custom_compressor)
 
@@ -81,39 +81,21 @@ Where:
 | residuals | Residuals of the fit, i.e. y_fit - y | (n, m) |
 |     y1    | Next Y values                        | (1, m) |
 
-
-=========  ====================================  =======
-name       description                           shape
-=========  ====================================  =======
-x          x values of the points to be fitted    (n,)
-y          y values of the points to be fitted   (n,m)
-y0         Last compressed point y value(s)      (1, m)
-residuals  Residuals of the fit, i.e. y_fit - y  (n, m)
-y1         Next Y values (1, m)
-=========  ====================================  =======
-
 Compressing a data stream
 ------------------------------------
 
 Decompressing
 -------------
 
-For decom
+For decompressing
 
 For this reason, the decompressor can in
 
 Making custom compressors
 ==================
 
-
-
-A custom compressor needs a fucntion
+A custom compressor needs a function
 
 '''
-import sys
 __version__ = '1.0.13'
-#%%═════════════════════════════════════════════════════════════════════
-# IMPORT
-from .API import *
-# A part of the hack to make the package callable
-sys.modules[__name__].__class__ = Pseudomodule
+from ._API import *
