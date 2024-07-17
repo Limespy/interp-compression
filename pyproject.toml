@@ -34,7 +34,7 @@ dynamic = [
 ]
 
 [project.scripts]
-limesqueezer = "limesqueezer:main"
+limesqueezer = "limesqueezer.CLI:main"
 
 [project.urls]
 Homepage = "https://github.com/Limespy/limesqueezer"

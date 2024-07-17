@@ -7,9 +7,7 @@ API
 Connection point for all package utilities provided
 '''
 import collections
-import sys
 import time
-import types
 from bisect import bisect_left as _bisect_left
 
 import numpy as np
@@ -337,7 +335,7 @@ def LSQ10(x_in: Float64Array,
         return np.array(xc), np.array(yc)
 #%%=====================================================================
 # STREAM COMPRESSION
-class _StreamRecord(collections.abc.Sized):
+class StreamRecord(collections.abc.Sized):
     """Class for doing stream compression for data of 1-dimensional system of
     equations i.e. single wait variable and one or more output variable."""
     def __init__(self,
@@ -481,7 +479,7 @@ class _StreamRecord(collections.abc.Sized):
         self.state = 'closed'
         if G['timed']: G['runtime'] = time.perf_counter() - G['t_start']
     #-------------------------------------------------------------------
-class _StreamRecord_debug(_StreamRecord):
+class _StreamRecord_debug(StreamRecord):
     """Class for doing stream compression for data of 1-dimensional system of
     equations i.e. single wait variable and one or more output variable."""
     def __init__(self, *args, interpolator):
@@ -642,15 +640,15 @@ class Stream():
                                           self.sqrtrange,
                                           self.f_fit, self.errorfunction)
     #-------------------------------------------------------------------
-    def __enter__(self) -> _StreamRecord | _StreamRecord_debug:
+    def __enter__(self) -> StreamRecord | _StreamRecord_debug:
         basic_args = (self.x0, self.y0, self.x_type, self.y_type, self.tol,
                       self.n2, self.get_f2zero)
-        self.record: _StreamRecord | _StreamRecord_debug
+        self.record: StreamRecord | _StreamRecord_debug
         if G['debug']:
             self.record = _StreamRecord_debug(*basic_args,
                                 interpolator = self.fitset.interpolate)
         else:
-            self.record = _StreamRecord(*basic_args)
+            self.record = StreamRecord(*basic_args)
         return self.record
     #-------------------------------------------------------------------
     def __exit__(self, exc_type, exc_value, traceback):
