@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topick :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering",
     "Topic :: System :: Archiving :: Compression",
     "Topic :: Utilities",
 ]
