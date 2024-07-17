@@ -1,5 +1,5 @@
 import pytest
-from limesqueezer.cli_ import main
+from limesqueezer.cli import main
 
 parametrize = pytest.mark.parametrize
 @parametrize(('args',), (((),),
