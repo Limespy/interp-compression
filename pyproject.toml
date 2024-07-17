@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topick :: Scientific/Engineering",
     "Topic :: System :: Archiving :: Compression",
     "Topic :: Utilities",
@@ -39,6 +40,9 @@ limesqueezer = "limesqueezer:main"
 Homepage = "https://github.com/Limespy/limesqueezer"
 Changelog = "https://github.com/Limespy/limesqueezer/blob/main/README.md#Changelog"
 "Issue Tracker" = "https://github.com/Limespy/limesqueezer/issues"
+
+[tool.limedev]
+full_name = "Limesqueezer"
 
 [tool.setuptools]
 include-package-data = true

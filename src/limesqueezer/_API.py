@@ -44,7 +44,7 @@ from .models import FitSet
 from .models import Interpolator
 from .root import _droots
 from .root import _intervals
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 # @numba.jit(nopython=True,cache=True)
 def n_lines(x: Float64Array,
             y: Float64Array,
@@ -63,7 +63,7 @@ def n_lines(x: Float64Array,
         return 0.5 * reference ** 0.5 + 1
     else:
         return 1.
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 def parse_tolerances(tolerances: TolerancesInput, shape: tuple[int, ...]
                      ) -> TolerancesInternal:
     if isinstance(tolerances, (float, np.ndarray)):
@@ -83,16 +83,16 @@ def parse_tolerances(tolerances: TolerancesInput, shape: tuple[int, ...]
             'Tolerances should be a number or sequence of 1-3 numbers')
     # Relative, absolute, falloff
     return np.array([to_ndarray(tol, shape) for tol in tolerances_triplet])
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 def _tolerance(y_sample: Float64Array, tolerances: TolerancesInternal
                      ) -> Float64Array:
     y_abs = np.abs(y_sample)
     reltols = y_abs * tolerances[0]
     abstols = tolerances[1] / (tolerances[2] * y_abs + 1)
     return reltols + abstols
-#───────────────────────────────────────────────────────────────────────
+#-----------------------------------------------------------------------
 tolerancefunctions = py_and_nb(_tolerance)
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 # Functions to be solved in discrete root finding
 F2Zero = Callable[[int], tuple[float, Float64Array]]
 GetF2Zero =  Callable[[Float64Array,
@@ -100,7 +100,7 @@ GetF2Zero =  Callable[[Float64Array,
                        float,
                        Float64Array],
                       F2Zero]
-#───────────────────────────────────────────────────────────────────────
+#-----------------------------------------------------------------------
 def init_get_f2zero(is_debug: bool,
                     use_numba: int,
                     tol: TolerancesInternal,
@@ -148,7 +148,7 @@ def init_get_f2zero(is_debug: bool,
                 wait('\t\tFitting\n')
                 return errorfunction(y_sample, y_fit, tolerance_total), y_fit[-1]
             return f2zero
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     else:
         def function(x: Float64Array,
                      y: Float64Array,
@@ -174,7 +174,7 @@ def init_get_f2zero(is_debug: bool,
                 return errorfunction(y_sample, y_fit, tolerance_total), y_fit[-1]
             return f2zero
     return function
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 # BLOCK COMPRESSION
 Compressor = Callable[[Float64Array,
                        Float64Array,
@@ -273,7 +273,7 @@ def LSQ10(x_in: Float64Array,
     solver = _droots[is_debug]
     if is_debug:
         G.update(debugsetup(x, y, start_err1, fitset, start))
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     # Main loop
     for _ in range(end): # Prevents infinite loop in case error
         if x[start-1] != xc[-1]:
@@ -285,40 +285,40 @@ def LSQ10(x_in: Float64Array,
         if start > end:
             break
         xc.append(x[start - 1])
-        if is_debug: #─────────────────────────────────────────────────┐
+        if is_debug: #-------------------------------------------------┐
             print(f'{start=}\t{offset=}\t{end=}\t')
             print(f'{fit=}')
             _reset_ax('ax_root', 'Maximum residual')
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
         if fit is None:
             if offset == 0: # No skipping of points was possible
                 yc.append(y[start - 1])
-                if is_debug: #─────────────────────────────────────────┐
+                if is_debug: #-----------------------------------------┐
                     G['x_plot'] = xc[-2:]
                     G['y_plot'] = yc[-2:]
-                #──────────────────────────────────────────────────────┘
+                #------------------------------------------------------┘
             else: # Something weird
                 raise RuntimeError(
                     'Fit returned was None, check fit functions for errors')
         else:
             yc.append(fit)
-            if is_debug: #─────────────────────────────────────────────┐
+            if is_debug: #---------------------------------------------┐
                 G['x_plot'] = G['x'][start -1 + np.arange(- offset, 0)]
                 G['y_plot'] = G['interp'](G['x_plot'], *xc[-2:], *yc[-2:])
-            #──────────────────────────────────────────────────────────┘
-        if is_debug: #─────────────────────────────────────────────────┐
+            #----------------------------------------------------------┘
+        if is_debug: #-------------------------------------------------┐
             G['ax_data'].plot(G['x_plot'], G['y_plot'], color = 'red')
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
 
         limit -= step
         # Setting up to be next estimation
         if limit < offset: offset = limit
 
-        if is_debug: #─────────────────────────────────────────────────┐
+        if is_debug: #-------------------------------------------------┐
             G['start'] = start
             G['ax_data'].plot(xc[-1], yc[-1],'go')
             wait('Next iteration\n')
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
     else:
         raise StopIteration('Maximum number of iterations reached')
     # Finalising
@@ -335,7 +335,7 @@ def LSQ10(x_in: Float64Array,
         return to_ndarray(xc, xshape), to_ndarray(yc, yshape)
     else:
         return np.array(xc), np.array(yc)
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 # STREAM COMPRESSION
 class _StreamRecord(collections.abc.Sized):
     """Class for doing stream compression for data of 1-dimensional system of
@@ -367,7 +367,7 @@ class _StreamRecord(collections.abc.Sized):
         self.get_f2zero = get_f2zero
 
         self.interval = _intervals[0]
-    #─────────────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------------
     def update_f2zero(self, x_array: Float64Array, y_array: Float64Array,
                            x0: float, y0: Float64Array, limit: int):
             if x_array.shape != (limit + 1,):
@@ -376,12 +376,12 @@ class _StreamRecord(collections.abc.Sized):
                 raise ValueError(f'yb {y_array.shape=} len {limit + 1}')
 
             return self.get_f2zero(x_array, y_array, x0, y0)
-    #─────────────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------------
     def squeeze_buffer(self, f2zero: F2Zero, n1: int, err1: float,
                        n2: int, err2: float,
                        ) -> int:
         """Compresses the buffer by one step."""
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
         offset, fit = self.interval(f2zero, n1, err1, n2, err2, self.fit1)
         self.xc.append(self.xb[offset])
         if fit is None:
@@ -398,7 +398,7 @@ class _StreamRecord(collections.abc.Sized):
 
         self.n2 = offset # Approximation
         return step
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __call__(self, x_raw: float, y_raw: MaybeArray) -> bool:
         was_squeezed = False # For tracking if the buffer was compressed
 
@@ -410,13 +410,13 @@ class _StreamRecord(collections.abc.Sized):
         self.xb.append(x_raw)
         self.yb.append(to_ndarray(y_raw, (-1,)))
         self.limit += 1
-        if  self.limit >= self.n2: #───────────────────────────────────┐
+        if  self.limit >= self.n2: #-----------------------------------┐
             # Converting to numpy arrays for fitting
             f2zero = self.update_f2zero(np.array(self.xb),
                                         np.array(self.yb),
                                         self.xc[-1], self.yc[-1], self.limit)
             err2, fit2 = f2zero(self.n2)
-            if err2 < 0: #──────────────────────────────────────────────┐
+            if err2 < 0: #----------------------------------------------┐
                 self.n1, self.err1, self.fit1 = self.n2, err2, fit2
                 self.n2 *= 2
                 self.n2 += 1
@@ -431,21 +431,21 @@ class _StreamRecord(collections.abc.Sized):
                 if self.xc[-1] == self.xb[0]:
                     raise IndexError(
                         'Buffer out of sync with the compressed')
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
         return was_squeezed
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __iter__(self):
         if self.state == 'open':
             return zip(self.xc, self.yc)
         elif self.state == 'closed':
             return zip(self.x, self.y)
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __len__(self):
         return len(self.x)
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __repr__(self):
         return f'{self.__class__.__name__}\n{self.x=}\n{self.y=}\n{self.tol=}'
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def close(self):
         """Closes the context manager."""
         self.state = 'closing'
@@ -459,7 +459,7 @@ class _StreamRecord(collections.abc.Sized):
             y_array = to_ndarray(self.yb, (self.limit + 1, -1))
             f2zero = self.update_f2zero(x_array, y_array,
                                         self.xc[-1], self.yc[-1], self.limit)
-            while (err2 := f2zero(self.n2)[0]) > 0: #──────────────────┐
+            while (err2 := f2zero(self.n2)[0]) > 0: #------------------┐
                 step = self.squeeze_buffer(f2zero, self.n1, self.err1,
                                             self.n2, err2)
                 x_array, y_array = x_array[step:], y_array[step:]
@@ -467,7 +467,7 @@ class _StreamRecord(collections.abc.Sized):
                 if self.n2 > self.limit: self.n2 = self.limit
                 f2zero = self.update_f2zero(x_array, y_array,
                                             self.xc[-1], self.yc[-1], self.limit)
-            #──────────────────────────────────────────────────────────┘
+            #----------------------------------------------------------┘
             self.xc.append(self.xb[-1])
             self.yc.append(self.yb[-1])
             self._lenc += 1
@@ -480,7 +480,7 @@ class _StreamRecord(collections.abc.Sized):
 
         self.state = 'closed'
         if G['timed']: G['runtime'] = time.perf_counter() - G['t_start']
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
 class _StreamRecord_debug(_StreamRecord):
     """Class for doing stream compression for data of 1-dimensional system of
     equations i.e. single wait variable and one or more output variable."""
@@ -509,7 +509,7 @@ class _StreamRecord_debug(_StreamRecord):
         plt.ion()
         plt.show()
         wait('Initialised')
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def squeeze_buffer(self, f2zero: F2Zero, n1: int, err1: float,
                        n2: int, err2: float,
                        ) -> int:
@@ -541,7 +541,7 @@ class _StreamRecord_debug(_StreamRecord):
 
         self.n2 = offset # Approximation
         return step
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __call__(self, x_raw: float, y_raw: MaybeArray) -> bool:
         was_squeezed = False # For tracking if the buffer was compressed
         if type(x_raw) != self.x_type:
@@ -560,7 +560,7 @@ class _StreamRecord_debug(_StreamRecord):
             self.max_y = np.amax(y_raw)
             G['ax_data'].set_ylim(self.min_y * 1.1, self.max_y * 1.1)
 
-        if  self.limit >= self.n2: #───────────────────────────────────┐
+        if  self.limit >= self.n2: #-----------------------------------┐
             # Converting to numpy arrays for fitting
             x_array = to_ndarray(self.xb)
             y_array = to_ndarray(self.yb, (self.limit + 1, -1))
@@ -572,7 +572,7 @@ class _StreamRecord_debug(_StreamRecord):
             G['xy1'], = G['ax_root'].plot(self.n1, self.err1,'g.')
             G['xy2'], = G['ax_root'].plot(self.n2, err2,'b.')
 
-            if err2 < 0: #─────────────────────────────────────────────┐
+            if err2 < 0: #---------------------------------------------┐
 
                 wait('Calculating new attempt in end\n')
                 G['ax_root'].plot(self.n1, self.err1,'.', color = 'black')
@@ -599,12 +599,12 @@ class _StreamRecord_debug(_StreamRecord):
                 if self.xc[-1] == self.xb[0]:
                     raise IndexError(
                         'Buffer out of sync with the compressed')
-            #──────────────────────────────────────────────────────────┘
+            #----------------------------------------------------------┘
             G['ax_data'].plot(self.xc[-1], self.yc[-1], 'go')
             wait('Next iteration\n')
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
         return was_squeezed
-###═════════════════════════════════════════════════════════════════════
+###=====================================================================
 class Stream():
     """Context manager for stream compression of data of 1 dimensional system
     of equations."""
@@ -626,13 +626,13 @@ class Stream():
         self.fragile: bool = fragile
 
         self.errorfunction: ErrorFunction
-        if isinstance(errorfunction, str): #───────────────────────────┐
+        if isinstance(errorfunction, str): #----------------------------
             self.errorfunction = errorfunctions[errorfunction][use_numba]
         else:
             self.errorfunction = errorfunction
-        #──────────────────────────────────────────────────────────────┘
+        #---------------------------------------------------------------
         self.fitset = fitset
-        #──────────────────────────────────────────────────────────────┘
+        #--------------------------------------------------------------┘
         self.f_fit      = self.fitset.fit[use_numba]
         self.sqrtrange  = sqrtranges[use_numba]
         self.n2         = initial_step
@@ -641,7 +641,7 @@ class Stream():
                                           self.tol,
                                           self.sqrtrange,
                                           self.f_fit, self.errorfunction)
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __enter__(self) -> _StreamRecord | _StreamRecord_debug:
         basic_args = (self.x0, self.y0, self.x_type, self.y_type, self.tol,
                       self.n2, self.get_f2zero)
@@ -652,25 +652,25 @@ class Stream():
         else:
             self.record = _StreamRecord(*basic_args)
         return self.record
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def __exit__(self, exc_type, exc_value, traceback):
         try:
             self.record.close()
         except Exception as exc:
             if self.fragile:
                 raise RuntimeError('Closing of the record failed') from exc
-#%%═════════════════════════════════════════════════════════════════════
+#%%=====================================================================
 # WRAPPING
 # Here are the main external inteface functions
 interpolators = {'Poly10': models.Poly10.interpolate}
 compressors = {'LSQ10': LSQ10}
-#───────────────────────────────────────────────────────────────────────
+#-----------------------------------------------------------------------
 def compress(*args, compressor: Compressor | str = LSQ10, **kwargs):
     """Wrapper for easier selection of compression method."""
     if isinstance(compressor, str):
         compressor = compressors[compressor]
     return compressor(*args, **kwargs)
-#───────────────────────────────────────────────────────────────────────
+#-----------------------------------------------------------------------
 def decompress(x_compressed: Float64Array, y_compressed: Float64Array,
               interpolator: str | Interpolator = 'Poly10',
               use_numba: int = 0):
@@ -679,14 +679,14 @@ def decompress(x_compressed: Float64Array, y_compressed: Float64Array,
     interpolator: Interpolator = (interpolators[interpolator][use_numba]
                                   if isinstance(interpolator, str)
                                   else interpolator)
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def _iteration(x: float, low: int = 1) -> tuple[int, MaybeArray]:
         index = _bisect_left(x_compressed, x, # type:ignore
                              lo = low, hi = y_compressed.shape[0]-1)
         return index, interpolator(x, # type:ignore
                                    *x_compressed[index-1:(index + 1)],
                                    *y_compressed[index-1:(index + 1)])
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     def function(x_input):
         if hasattr(x_input, '__iter__'):
             out = np.full((len(x_input),) + y_compressed.shape[1:], np.nan)
@@ -696,25 +696,5 @@ def decompress(x_compressed: Float64Array, y_compressed: Float64Array,
             return out
         else:
             return _iteration(x_input)[1]
-    #───────────────────────────────────────────────────────────────────
+    #-------------------------------------------------------------------
     return function
-#%%═════════════════════════════════════════════════════════════════════
-# HACKS
-# A hack to make the package callable
-class Pseudomodule(types.ModuleType):
-    """Class that allows making the module callable."""
-    @staticmethod
-    def __call__(*args,
-                 compressor: str | Compressor = 'LSQ10',
-                 interpolator: str | Interpolator = 'Poly10',
-                 **kwargs):
-        """Wrapper for easier for combined compression and decompression."""
-        return decompress(*compress(*args, # type:ignore
-                                    compressor = compressor,
-                                    **kwargs),
-                          interpolator = interpolator)
-#%%═════════════════════════════════════════════════════════════════════
-# Here the magic happens for making the API module itself also callable
-sys.modules[__name__].__class__ = Pseudomodule
-
-__all__ = ['Stream', 'compress', 'decompress', 'Pseudomodule', 'LSQ10']

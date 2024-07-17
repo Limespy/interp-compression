@@ -1,10 +1,4 @@
 """Command line interface for processing command line input."""
-# ======================================================================
-# IMPORT
-import argparse
-import pathlib
-import sys
-
 import numpy as np
 from limedev.CLI import get_main
 
