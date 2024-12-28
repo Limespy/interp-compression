@@ -44,7 +44,7 @@ import limesqueezer as ls
 
 # Changelog <!-- omit in toc -->
 
-## 1.0.13 2024-07-17 <!-- omit in toc -->
+## 1.1.0 2024-12-28 <!-- omit in toc -->
 
 - Support for python 3.12
 
