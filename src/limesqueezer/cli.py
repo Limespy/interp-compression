@@ -3,8 +3,8 @@ from limedev.CLI import get_main
 
 from . import _API as ls
 from . import reference as ref
-from .auxiliaries import Float64Array
-from .auxiliaries import G
+from ._aux import G
+from ._lnumpy import F64Array
 # ======================================================================
 X_DATA, Y_DATA = ref.raw_sine_x2_normal(1e4, std=0.00001)
 # ======================================================================
@@ -26,8 +26,8 @@ def block(use_numba: bool = False,
 
     return 0
 # ======================================================================
-def _stream(X_DATA: Float64Array,
-            Y_DATA: Float64Array,
+def _stream(X_DATA: F64Array,
+            Y_DATA: F64Array,
             tol: tuple[float, float, float],
             use_numba: int):
 

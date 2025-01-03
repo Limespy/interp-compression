@@ -1,8 +1,8 @@
-from .auxiliaries import _set_xy
-from .auxiliaries import Any
-from .auxiliaries import Function
-from .auxiliaries import G
-from .auxiliaries import wait
+from ._aux import _set_xy
+from ._aux import Any
+from ._aux import Function
+from ._aux import G
+from ._aux import wait
 #%%═══════════════════════════════════════════════════════════════════════════
 ## ROOT FINDING
 def interval(f: Function, n1: int, err1: float, n2: int, err2: float, fit1

@@ -9,39 +9,48 @@ Connection point for all package utilities provided
 import collections
 import time
 from bisect import bisect_left as _bisect_left
+from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from . import models
 from . import reference as ref # Careful with this circular import
-from .auxiliaries import _reset_ax
-from .auxiliaries import _set_xy
-from .auxiliaries import Any
-from .auxiliaries import Callable
-from .auxiliaries import debugsetup
-from .auxiliaries import default_numba_kwargs
-from .auxiliaries import Float64Array
-from .auxiliaries import G
-from .auxiliaries import Int64Array
-from .auxiliaries import MaybeArray
-from .auxiliaries import maybejit
-from .auxiliaries import py_and_nb
-from .auxiliaries import SqrtRange
-from .auxiliaries import sqrtranges
-from .auxiliaries import stats
-from .auxiliaries import to_ndarray
-from .auxiliaries import TolerancesInput
-from .auxiliaries import TolerancesInternal
-from .auxiliaries import wait
-from .errorfunctions import _maxsumabs
-from .errorfunctions import ErrorFunction
-from .errorfunctions import errorfunctions
-from .models import FitFunction
+from ._aux import _reset_ax
+from ._aux import _set_xy
+from ._aux import debugsetup
+from ._aux import G
+from ._aux import maybejit
+from ._aux import py_and_nb
+from ._aux import sqrtranges
+from ._aux import stats
+from ._aux import to_ndarray
+from ._aux import wait
+from ._errorfunctions import _maxsumabs
+from ._errorfunctions import errorfunctions
 from .models import FitSet
-from .models import Interpolator
 from .root import _droots
 from .root import _intervals
+# ======================================================================
+# Hinting types
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
+    from ._aux import Float64Array
+    from ._aux import MaybeArray
+    from ._aux import SqrtRange
+    from ._aux import TolerancesInput
+    from ._aux import TolerancesInternal
+    from ._errorfunctions import ErrorExcessFunction
+    from .models import FitFunction
+    from .models import Interpolator
+else:
+    Callable = tuple
+    Any = Float64Array = MaybeArray = SqrtRange = TolerancesInput = object
+    TolerancesInternal = ErrorExcessFunction = FitFunction = object
+    Interpolator = object
+# ======================================================================
 #%%=====================================================================
 # @numba.jit(nopython=True,cache=True)
 def n_lines(x: Float64Array,
@@ -104,7 +113,7 @@ def init_get_f2zero(is_debug: bool,
                     tol: TolerancesInternal,
                     sqrtrange: SqrtRange,
                     f_fit: FitFunction,
-                    errorfunction: ErrorFunction):
+                    errorfunction: ErrorExcessFunction):
     """Third orgder function to initialise the second order function to get
     f2zero."""
     tolerancefunction = tolerancefunctions[use_numba]
@@ -178,7 +187,7 @@ Compressor = Callable[[Float64Array,
                        Float64Array,
                        TolerancesInput,
                        int | None,
-                       str | ErrorFunction,
+                       str | ErrorExcessFunction,
                        int,
                        str | Any,
                        bool],
@@ -187,7 +196,7 @@ def LSQ10(x_in: Float64Array,
           y_in: Float64Array, /,
           tolerances: TolerancesInput = (1e-2, 1e-2, 0),
           initial_step: int  | None = None,
-          errorfunction: str | ErrorFunction = 'MaxAbs',
+          errorfunction: str | ErrorExcessFunction = 'MaxAbs',
           use_numba: int = 0,
           fitset: Any = models.Poly10,
           keepshape: bool = False
@@ -611,7 +620,7 @@ class Stream():
                  y_initial: float | Float64Array,
                  tolerances: TolerancesInput = (1e-2, 1e-3, 0),
                  initial_step: int = 100,
-                 errorfunction: ErrorFunction | str = 'MaxAbs',
+                 errorfunction: ErrorExcessFunction | str = 'MaxAbs',
                  use_numba: int = 0,
                  fitset: FitSet = models.Poly10,
                  fragile: bool = True):
@@ -623,7 +632,7 @@ class Stream():
         self.tol = parse_tolerances(tolerances, self.y0.shape)
         self.fragile: bool = fragile
 
-        self.errorfunction: ErrorFunction
+        self.errorfunction: ErrorExcessFunction
         if isinstance(errorfunction, str): #----------------------------
             self.errorfunction = errorfunctions[errorfunction][use_numba]
         else:

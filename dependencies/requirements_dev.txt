@@ -1,3 +1,5 @@
+colorama
 limedev[test,package,readme] >= 0.6.1
+matplotlib >= 3.9
 pre-commit >= 3.6.0, <4
 tox >= 4.5.1
