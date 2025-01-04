@@ -44,9 +44,10 @@ import limesqueezer as ls
 
 # Changelog <!-- omit in toc -->
 
-## 1.1.0 2024-12-28 <!-- omit in toc -->
+## 2.0.0 2025-01-04 <!-- omit in toc -->
 
-- Support for python 3.12
+- Added support for Python 3.12 and 3.13
+- Dropped support for Python 3.10
 
 ## 1.0.12 2022-07-16 <!-- omit in toc -->
 

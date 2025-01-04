@@ -97,5 +97,5 @@ Making custom compressors
 A custom compressor needs a function
 
 '''
-__version__ = '1.1.0'
+__version__ = '2.0.0'
 from ._API import *

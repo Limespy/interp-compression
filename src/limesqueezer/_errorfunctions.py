@@ -6,7 +6,7 @@ import numpy as np
 
 from . import _lnumba as nb
 from ._aux import py_and_nb
-from .poly.diff import diff_in_place
+from .poly import diff
 from .poly.interpolate import get_interpolators
 from .poly.interpolate import nbInterpolatorsList
 # ======================================================================
@@ -15,15 +15,8 @@ if TYPE_CHECKING:
 
     from typing import Protocol
 
-
-    from ._typing import PolyCoeffType
-    from ._typing import TolType
-    from ._typing import XSamplesType
-    from ._typing import YSampleType
-
     from ._aux import F64Array
     from ._aux import TolerancesInternal
-
 
     from .poly import Interpolator
 
@@ -45,37 +38,11 @@ else:
     TolerancesInternal = ErrorExcessFunction = tuple
 
     ErrorThresholdFunction = object
-    N_Points = N_Diffs = N_Vars = N_Coeffs = object
-    XSamplesType = YSampleType = PolyCoeffType = TolType = object
 # ----------------------------------------------------------------------
 N_Coeffs = TypeVar('N_Coeffs', bound = int)
 N_Diffs = TypeVar('N_Diffs', bound = int)
 N_Samples = TypeVar('N_Samples', bound = int)
 N_Vars = TypeVar('N_Vars', bound = int)
-# ======================================================================
-@nb.njit
-def call(Dx_samples: XSamplesType,
-             y_samples: YSampleType,
-             coeffs: PolyCoeffType,
-             interps: list,
-             rtol: TolType,
-             atol: TolType):
-    n_diffs = len(rtol)
-    excess = -np.inf
-    n = np.uintp(2) * n_diffs
-    for i_diff in range(n_diffs):
-        r_diff = rtol[i_diff]
-        a_diff = atol[i_diff]
-        interp = interps[i_diff]
-        for i_sample in range(len(Dx_samples)):
-            Dx = Dx_samples[i_sample]
-            for s, p, r, a in zip(y_samples[i_sample, i_diff],
-                                coeffs, r_diff, a_diff):
-                excess = max(excess,
-                            abs(s - interp(Dx, p)) - abs(s) * r - a)
-        n -= np.uintp(1)
-        diff_in_place(coeffs, n)
-    return excess
 # ======================================================================
 class _ErrBase(Generic[N_Coeffs, N_Diffs, N_Samples, N_Vars]):
     def __init__(self,
@@ -115,7 +82,7 @@ class MaxAbs_Sequential(_ErrBase[N_Coeffs, N_Diffs, N_Samples, N_Vars]):
                         print(Dx, excess, s, a, rtol, atol)
                         raise Exception
             n -= np.uintp(1)
-            diff_in_place(coeffs, n)
+            diff.in_place(coeffs, n)
         return excess
     # ------------------------------------------------------------------
     def minimum(self, y0_min: F64Array[int, int]):
