@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 else:
     F64Array = L = tuple
+    overload = lambda x:x
 # ----------------------------------------------------------------------
 N_Coeffs = TypeVar('N_Coeffs', bound = int)
 N_Diffs = TypeVar('N_Diffs', bound = int)
@@ -41,8 +42,34 @@ class Interpolator(Protocol[N_Coeffs, N_Vars]):
         ...
 
 # ======================================================================
-nbInterpSingleType = nb.f64(nb.float64, nb.float64[:]).as_type()
+nbInterpSingleType = nb.f64[:](nb.float64, nb.float64[:, :]).as_type()
 nbdec = nb.njit
+# ======================================================================
+@overload
+def interpolate(Dx: float, coefficients: F64Array[N_Coeffs], n: int
+                ) -> float:
+    ...
+@overload
+def interpolate(Dx: float, coefficients: F64Array[N_Coeffs, N_Vars], n: int
+                ) -> F64Array[N_Vars]:
+    ...
+@overload
+def interpolate(Dx: F64Array[N_Points], coefficients: F64Array[N_Coeffs], n: int
+                ) -> F64Array[N_Vars]:
+    ...
+@overload
+def interpolate(Dx: F64Array[N_Points, L[1]],
+                coefficients: F64Array[N_Coeffs], n: int
+                ) -> F64Array[N_Points, N_Vars]:
+    ...
+# @nb.njit
+def interpolate(Dx, coefficients, n):
+    out = Dx * coefficients[0]
+    for i in range(1, n):
+        out += coefficients[i]
+        out *= Dx
+    out += coefficients[n]
+    return out
 # ======================================================================
 @nbdec
 def poly1(Dx: F64Array | float, coefficients: F64Array) -> F64Array:
@@ -129,7 +156,7 @@ def poly7(Dx: F64Array | float, coefficients: F64Array) -> F64Array:
     return out
 # ======================================================================
 interpolators = (None, poly1, poly2, poly3, poly4, poly5, poly6, poly7)
-nbInterpolatorsList = nb.List[nbInterpSingleType]
+nbInterpolatorsList = nb.ListType(nbInterpSingleType)
 
 @nb.njit
 def get_interpolators(n_diffs: int) -> list[Interpolator]:
@@ -150,5 +177,5 @@ def get_interpolators(n_diffs: int) -> list[Interpolator]:
         out.append(poly4)
     return out
 # ======================================================================
-def interpolate(Dx: F64Array | float, coefficients: F64Array) -> F64Array:
-    return interpolators[len(coefficients) - 2](Dx, coefficients)
+# def interpolate(Dx: F64Array | float, coefficients: F64Array) -> F64Array:
+#     return interpolators[len(coefficients) - 2](Dx, coefficients)

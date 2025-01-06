@@ -1,23 +1,24 @@
 from typing import TYPE_CHECKING
+from typing import TypeAlias
 
 import numpy as np
 
 from . import _lnumba as nb
 # ======================================================================
-f16 = np.float16
-f32 = np.float32
-f64 = np.float64
+f16: TypeAlias = np.float16
+f32: TypeAlias = np.float32
+f64: TypeAlias = np.float64
 
-i8 = np.int8
-i16 = np.int16
-i32 = np.int32
-i64 = np.int64
+i8: TypeAlias = np.int8
+i16: TypeAlias = np.int16
+i32: TypeAlias = np.int32
+i64: TypeAlias = np.int64
 
-u8 = np.uint8
-u16 = np.uint16
-u32 = np.uint32
-u64 = np.uint64
-up = np.uintp
+u8: TypeAlias = np.uint8
+u16: TypeAlias = np.uint16
+u32: TypeAlias = np.uint32
+u64: TypeAlias = np.uint64
+up: TypeAlias = np.uintp
 
 # ======================================================================
 # TYPES
@@ -87,7 +88,7 @@ if TYPE_CHECKING:
     U32Array: TypeAlias = _Array[*ShapeTuple, u32]
     U64Array: TypeAlias = _Array[*ShapeTuple, u64]
     UPArray: TypeAlias = _Array[*ShapeTuple, up]
-    UArray: TypeAlias = U16Array | U32Array | U64Array
+    UArray: TypeAlias = U16Array | U32Array | U64Array | UPArray
 
     NumArray: TypeAlias = FArray | IArray | UArray
 

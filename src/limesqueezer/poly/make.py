@@ -29,8 +29,7 @@ if TYPE_CHECKING:
             ...
     class Finish(Protocol[N_Diffs, N_Coeffs, N_Vars]):
         def __call__(self, Dx: float,
-                     ya: F64Array[N_Diffs, N_Vars],
-                      yb: F64Array[N_Diffs, N_Vars],
+                     yb: F64Array[N_Diffs, N_Vars],
                       coeffs: F64Array[N_Coeffs, N_Vars]) -> None:
             ...
     Make1: TypeAlias = Make[L[1], L[2], int]
@@ -74,8 +73,8 @@ def prepare1(ya, coeffs):
 prepare1 = cast(Prepare1, prepare1)
 # ----------------------------------------------------------------------
 @nbdec
-def finish1(Dx, ya, yb, coeffs):
-    coeffs[0] = yb[0] - ya[0]
+def finish1(Dx, yb, coeffs):
+    coeffs[0] = yb[0] - coeffs[1]
     coeffs[0] /= Dx
 finish1 = cast(Finish1, finish1)
 # ----------------------------------------------------------------------
@@ -89,15 +88,15 @@ def prepare3(ya, coeffs):
 prepare3 = cast(Prepare3, prepare3)
 # ----------------------------------------------------------------------
 @nbdec
-def finish3(Dx, ya, yb, coeffs):
+def finish3(Dx, yb, coeffs):
 
     _Dx = 1./Dx
     _Dx2 = _Dx * _Dx
     _Dx3 = _Dx2 * _Dx
 
-    ya1Dx = ya[1] * Dx
+    ya1Dx = coeffs[2] * Dx
 
-    Dy0 = yb[0] - (ya[0] + ya1Dx)
+    Dy0 = yb[0] - (coeffs[3] + ya1Dx)
     Dy1 = yb[1] * Dx - ya1Dx
 
     coeffs[0] = (-2. * Dy0 + Dy1) * _Dx3
@@ -109,19 +108,19 @@ split3 = (prepare3, finish3)
 @nbdec
 def make3(Dx, ya, yb, coeffs):
     prepare3(ya, coeffs)
-    finish3(Dx, ya, yb, coeffs)
+    finish3(Dx, yb, coeffs)
 make3 = cast(Make3, make3)
 # ======================================================================
 # 5
 @nbdec
 def prepare5(ya, coeffs):
-    coeffs[3] = ya[2] * 0.5
+    coeffs[3] = ya[2]
     coeffs[4] = ya[1]
     coeffs[5] = ya[0]
 prepare5 = cast(Prepare5, prepare5)
 # ----------------------------------------------------------------------
 @nbdec
-def finish5(Dx, ya, yb, coeffs):
+def finish5(Dx, yb, coeffs):
     Dx2_2 = Dx * Dx * 0.5
 
     _Dx = 1./Dx
@@ -130,10 +129,10 @@ def finish5(Dx, ya, yb, coeffs):
     _Dx4 = _Dx2 * _Dx2
     _Dx5 = _Dx3 * _Dx2
 
-    ya1Dx = ya[1] * Dx
-    ya2Dx2_2 = ya[2] * Dx2_2
+    ya1Dx = coeffs[4] * Dx
+    ya2Dx2_2 = coeffs[3] * Dx2_2
 
-    Dy0 = yb[0] - ya[0] - ya1Dx - ya2Dx2_2
+    Dy0 = yb[0] - coeffs[5] - ya1Dx - ya2Dx2_2
     # Dy0 = yb[0]
     # Dy0 -= coeffs[0]
     # Dy0 -= ya1Dx
@@ -149,6 +148,7 @@ def finish5(Dx, ya, yb, coeffs):
     coeffs[0] = (  6. * Dy0 - 3. * Dy1 +      Dy2) * _Dx5
     coeffs[1] = (-15. * Dy0 + 7. * Dy1 - 2. * Dy2) * _Dx4
     coeffs[2] = ( 10. * Dy0 - 4. * Dy1 +      Dy2) * _Dx3
+    coeffs[3] *= 0.5
 finish5 = cast(Finish5, finish5)
 # ----------------------------------------------------------------------
 split5 = (prepare5, finish5)
@@ -156,7 +156,7 @@ split5 = (prepare5, finish5)
 @nbdec
 def make5(Dx, ya, yb, coeffs):
     prepare5(ya, coeffs)
-    finish5(Dx, ya, yb, coeffs)
+    finish5(Dx, yb, coeffs)
 make5 = cast(Make5, make5)
 # ======================================================================
 # 7
@@ -243,17 +243,18 @@ make5 = cast(Make5, make5)
 # ----------------------------------------------------------------------
 @nbdec
 def prepare7(ya, coeffs):
-    coeffs[4] = ya[3] * 0.16666666666666666666666666666666666666666666667
-    coeffs[5] = ya[2] * 0.5
+    coeffs[4] = ya[3]
+    coeffs[5] = ya[2]
     coeffs[6] = ya[1]
     coeffs[7] = ya[0]
 prepare7 = cast(Prepare7, prepare7)
 # ----------------------------------------------------------------------
-# @nbdec
-def finish7(Dx, ya, yb, coeffs):
+@nbdec
+def finish7(Dx, yb, coeffs):
 
+    _1_6 = 0.16666666666666666666666666666666666666666666667
     Dx2 = Dx * Dx
-    Dx3_6 = Dx2 * Dx * 0.16666666666666666666666666666666666666666666667
+    Dx3_6 = Dx2 * Dx * _1_6
 
     _Dx = 1./Dx
     _Dx2 = _Dx * _Dx
@@ -263,39 +264,42 @@ def finish7(Dx, ya, yb, coeffs):
     _Dx6 = _Dx3 * _Dx3
     _Dx7 = _Dx4 * _Dx3
 
-    ya1Dx = ya[1] * Dx
-    ya2Dx2 = ya[2] * Dx2
-    ya3Dx3_6 = ya[3] * Dx3_6
-
+    ya1Dx = coeffs[6] * Dx
+    ya2Dx2 = coeffs[5] * Dx2
+    ya3Dx3_6 = coeffs[4] * Dx3_6
     # Dy0 = yb[0]
     # Dy0 -= coeffs[0]
     # Dy0 -=  ya1Dx
     # Dy0 -= ya2Dx2_2
     # Dy0 -= ya3Dx3_6
-    Dy0 = yb[0] - ya[0] - ya1Dx - 0.5 * ya2Dx2 - ya3Dx3_6
-
+    # print(yb[0,0], coeffs[7,0], ya1Dx[0], ya2Dx2[0], ya3Dx3_6[0])
+    # print(yb[0], coeffs[7], ya1Dx, ya2Dx2, ya3Dx3_6)
+    Dy0 = yb[0] - coeffs[7] - ya1Dx - 0.5 * ya2Dx2 - ya3Dx3_6
+    # print('Dy0', Dy0[0])
     # Dy1 = yb[1]
     # Dy1 *= Dx
     # Dy1 -= ya1Dx
     # Dy1 -= 2. * ya2Dx2_2
     # Dy1 -= 3. * ya3Dx3_6
     Dy1 = yb[1] * Dx - ya1Dx - ya2Dx2 - 3. * ya3Dx3_6
-
+    # print(Dy1)
     # Dy2 = yb[2]
     # Dy2 *= Dx2_2
     # Dy2 -= ya2Dx2_2
     # Dy2 -= 3. * ya3Dx3_6
     Dy2 = yb[2] * Dx2 - ya2Dx2 - 6. * ya3Dx3_6
-
+    # print('Dy2', Dy2)
     # Dy3 = yb[3]
     # Dy3 *= Dx3_6
     # Dy3 -= ya3Dx3_6
     Dy3 = yb[3] * Dx3_6 - ya3Dx3_6
-
+    # print('Dy3', Dy3)
     coeffs[0] = (-20. * Dy0 + 10. * Dy1 - 2.0 * Dy2 +  Dy3) * _Dx7
     coeffs[1] = ( 70. * Dy0 - 34. * Dy1 + 6.5 * Dy2 - 3. * Dy3) * _Dx6
     coeffs[2] = (-84. * Dy0 + 39. * Dy1 - 7.0 * Dy2 + 3. * Dy3) * _Dx5
     coeffs[3] = ( 35. * Dy0 - 15. * Dy1 + 2.5 * Dy2 - Dy3) * _Dx4
+    coeffs[4] *= _1_6
+    coeffs[5] *= 0.5
 finish7 = cast(Finish7, finish7)
 # ----------------------------------------------------------------------
 split7 = (prepare7, finish7)
@@ -303,7 +307,7 @@ split7 = (prepare7, finish7)
 @nbdec
 def make7(Dx, ya, yb, coeffs):
     prepare7(ya, coeffs)
-    finish7(Dx, ya, yb, coeffs)
+    finish7(Dx, yb, coeffs)
 make7 = cast(Make7, make7)
 # ======================================================================
 makers: tuple[Make1, Make3, Make5, Make7] = (make1, make3, make5, make7)
@@ -336,5 +340,5 @@ def make(Dx: float,
          ya: F64Array[N_Diffs, N_Vars],
          yb: F64Array[N_Diffs, N_Vars],
          coeffs: F64Array[N_Coeffs, N_Vars]) -> None:
-    return get_maker(len(ya))(Dx, ya, yb, coeffs)
+    return get_maker(len(ya))(Dx, yb, coeffs)
 # ----------------------------------------------------------------------

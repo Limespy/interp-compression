@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from collections.abc import Iterable
 from functools import partial
 from typing import Any
 from typing import cast
@@ -22,8 +21,22 @@ def copy_signature(source: T) -> Callable[..., T]:
 def copy_type(source: T, target: Any) -> T:
     return target
 # ======================================================================
-def Cast(Type):
+def _cast(Type):
     return partial(cast, Type)
+# ======================================================================
+class CastDec(Generic[T]):
+    def __init__(cls, _type: type[T]):
+        ...
+    def __call__(self, function: Any) -> T:
+        return function
+
+# Cast = CastGI()
+
+# @Cast(Function) # type: ignore[type-abstract]
+# def f(a):
+#     return a
+# print(f)
+# reveal_type(f)
 # ======================================================================
 # Types
 
@@ -33,7 +46,7 @@ N_Points = TypeVar('N_Points', bound = int)
 N_Samples = TypeVar('N_Samples', bound = int)
 N_Vars = TypeVar('N_Vars', bound = int)
 
-TolType = F64Array[N_Diffs, N_Vars]
-PolyCoeffType = F64Array[N_Coeffs, N_Vars]
-XSamplesType: TypeAlias = F64Array[N_Samples]
-YSampleType: TypeAlias = F64Array[N_Samples, N_Diffs, N_Vars]
+TolType: TypeAlias = F64Array[N_Diffs, N_Vars]
+PolyCoeffType: TypeAlias = F64Array[N_Coeffs, N_Vars]
+XType: TypeAlias = F64Array[N_Points]
+YType: TypeAlias = F64Array[N_Points, N_Diffs, N_Vars]

@@ -1,24 +1,30 @@
-from typing import Generic
+# from typing import Generic
 from typing import TYPE_CHECKING
-from typing import TypeVar
 
 import numpy as np
 
 from . import _lnumba as nb
 from ._aux import py_and_nb
+from ._lnumpy import up
 from .poly import diff
 from .poly.interpolate import get_interpolators
+from .poly.interpolate import interpolate
 from .poly.interpolate import nbInterpolatorsList
+# from typing import TypeVar
 # ======================================================================
 # Hinting types
 if TYPE_CHECKING:
 
     from typing import Protocol
+    from typing import TypeAlias
 
     from ._aux import F64Array
     from ._aux import TolerancesInternal
 
     from .poly import Interpolator
+    from ._typing import TolType
+    from ._typing import XType
+    from ._typing import YType
 
     class ErrorExcessFunction(Protocol):
         def __call__(self,
@@ -32,60 +38,133 @@ if TYPE_CHECKING:
                      y_approx: F64Array,
                      tolerances: TolerancesInternal) -> bool:
             ...
-
+    N_Coeffs: TypeAlias = int
+    N_Diffs: TypeAlias = int
+    N_Points: TypeAlias = int
+    N_Vars: TypeAlias = int
 else:
     F64Array = Interpolator = tuple
     TolerancesInternal = ErrorExcessFunction = tuple
 
     ErrorThresholdFunction = object
+    TolType = XType = YType = object
+    N_Coeffs = N_Diffs = N_Points = N_Vars = int
 # ----------------------------------------------------------------------
-N_Coeffs = TypeVar('N_Coeffs', bound = int)
-N_Diffs = TypeVar('N_Diffs', bound = int)
-N_Samples = TypeVar('N_Samples', bound = int)
-N_Vars = TypeVar('N_Vars', bound = int)
+
 # ======================================================================
-class _ErrBase(Generic[N_Coeffs, N_Diffs, N_Samples, N_Vars]):
+class _ErrBase:
     def __init__(self,
-                 rtol: F64Array[N_Diffs, N_Vars],
-                 atol: F64Array[N_Diffs, N_Vars]) -> None:
+                 rtol: F64Array[int, int],
+                 atol: F64Array[int, int]) -> None:
         self.rtol = rtol
         self.atol = atol
-        self.n_diffs = len(rtol)
-        self.interps: list[Interpolator[N_Coeffs, N_Vars]
-                           ] = get_interpolators(self.n_diffs)
+        self.n_diffs = up(rtol.shape[0])
+        self.n_var = up(rtol.shape[1])
 # ======================================================================
 # @nb.jitclass({'rtol': nb.ARO(2),
 #               'atol': nb.ARO(2),
-#               'interps': nbInterpolatorsList,
-#               'n_diffs': nb.size_t})
-class MaxAbs_Sequential(_ErrBase[N_Coeffs, N_Diffs, N_Samples, N_Vars]):
-    def call(self, Dx_samples: F64Array[N_Samples],
-             y_samples: F64Array[N_Samples, N_Diffs, N_Vars],
-             coeffs: F64Array[N_Coeffs, N_Vars]):
-        # return call(Dx_samples, y_samples, coeffs, self.interps, self.rtol, self.atol)
+#               'n_diffs': nb.size_t,
+#               'n_var': nb.size_t})
+class MaxAbs_Sequential(_ErrBase):
+    def call(self, x: F64Array[N_Points],
+             y: F64Array[N_Points, N_Diffs, N_Vars],
+             coeffs: F64Array[N_Coeffs, N_Vars],
+             x0: float,
+             start: int, stop: int, step: int) -> float:
+        print('MaxAbs_Sequential.call')
+        excess = -np.inf
+        n = up(2) * self.n_diffs
+        n_var = y.shape[2]
+        for i_diff in range(self.n_diffs):
+            print('\ti_diff', i_diff)
+            n -= up(1)
+            for i_sample in range(start, stop, step):
+                approxes: F64Array[N_Vars] = interpolate(x[i_sample] - x0,
+                                                         coeffs,
+                                                         n)
+                for i_var in range(n_var):
+                    sample = y[i_sample, i_diff, i_var]
+
+                    excess = max(excess,
+                                 abs(sample - approxes[i_var])
+                                 - abs(sample) * self.rtol[i_diff, i_var]
+                                 - self.atol[i_diff, i_var])
+                    if i_var == 0:
+                        print('\tsample', sample)
+                        print('\terr', abs(sample - approxes[i_var]))
+                        print('\texcess', excess)
+            diff.in_place(coeffs, n)
+        return excess
+    # ------------------------------------------------------------------
+    def minimum(self, y0_min: F64Array[N_Diffs, N_Vars]):
+        excess = -np.inf
+        for y_diff, r_diff, a_diff in zip(y0_min, self.rtol, self.atol):
+            for y, r, a in zip(y_diff, r_diff, a_diff):
+                excess = max(excess, - abs(y) * r - a)
+        return excess
+# ======================================================================
+@nb.jitclass({'rtol': nb.ARO(2),
+              'atol': nb.ARO(2),
+              'n_diffs': nb.size_t})
+class MaxAbs_Sequential2(_ErrBase):
+    def call(self, x: F64Array[N_Points],
+             y: F64Array[N_Points, N_Diffs, N_Vars],
+             coeffs: F64Array[N_Diffs, N_Coeffs, N_Vars],
+             x0: float,
+             start: int, stop: int, step: int) -> float:
+        excess = -np.inf
+        n_start = np.uintp(2) * self.n_diffs
+        n = n_start
+        n_var = y.shape[2]
+        for i_diff in range(self.n_diffs):
+            for i_sample in range(start, stop, step):
+                approxes: F64Array[N_Vars] = interpolate(x[i_sample] - x0,
+                                                         coeffs[i_diff],
+                                                         n)
+                for i_var in range(n_var):
+                    s = y[i_sample, i_diff, i_var]
+                    excess = max(excess,
+                                 abs(s - approxes[i_var])
+                                 - abs(s) * self.rtol[i_diff, i_var]
+                                 - self.atol[i_diff, i_var])
+            n -= np.uintp(1)
+        return excess
+    # ------------------------------------------------------------------
+    def minimum(self, y0_min: F64Array[N_Diffs, N_Vars]):
+        excess = -np.inf
+        for y_diff, r_diff, a_diff in zip(y0_min, self.rtol, self.atol):
+            for y, r, a in zip(y_diff, r_diff, a_diff):
+                excess = max(excess, - abs(y) * r - a)
+        return excess
+# ======================================================================
+@nb.jitclass({'rtol': nb.ARO(2),
+              'atol': nb.ARO(2),
+              'n_diffs': nb.size_t})
+class MaxAbs_Sequential3(_ErrBase):
+    def call(self, x: F64Array[N_Points],
+             y: F64Array[N_Points, N_Diffs, N_Vars],
+             coeffs: F64Array[N_Coeffs, N_Vars],
+             x0: float,
+             start: int, stop: int, step: int) -> float:
         excess = -np.inf
         n = np.uintp(2) * self.n_diffs
-
+        n_var = y.shape[2]
         for i_diff in range(self.n_diffs):
-
-            r_diff = self.rtol[i_diff]
-            a_diff = self.atol[i_diff]
-            interp: Interpolator = self.interps[i_diff]
-
-            for Dx, y_sample in zip(Dx_samples, y_samples):
-
-                approxes: F64Array[N_Vars] = interp(Dx, coeffs)
-                for s, a, rtol, atol in zip(
-                    y_sample[i_diff], approxes, r_diff, a_diff):
-                    excess = max(excess, abs(s - a) - abs(s) * rtol - atol)
-                    if excess >= 0.:
-                        print(Dx, excess, s, a, rtol, atol)
-                        raise Exception
+            for i_sample in range(start, stop, step):
+                approxes: F64Array[N_Vars] = interpolate(x[i_sample] - x0,
+                                                         coeffs,
+                                                         n)
+                for i_var in range(n_var):
+                    s = y[i_sample, i_diff, i_var]
+                    excess = max(excess,
+                                 abs(s - approxes[i_var])
+                                 - abs(s) * self.rtol[i_diff, i_var]
+                                 - self.atol[i_diff, i_var])
             n -= np.uintp(1)
             diff.in_place(coeffs, n)
         return excess
     # ------------------------------------------------------------------
-    def minimum(self, y0_min: F64Array[int, int]):
+    def minimum(self, y0_min: F64Array[N_Diffs, N_Vars]):
         excess = -np.inf
         for y_diff, r_diff, a_diff in zip(y0_min, self.rtol, self.atol):
             for y, r, a in zip(y_diff, r_diff, a_diff):
