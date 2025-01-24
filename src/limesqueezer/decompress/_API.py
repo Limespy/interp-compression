@@ -1,48 +1,51 @@
-from typing import TYPE_CHECKING
-
 import numpy as np
+from scipy.interpolate import PPoly
 
 from .. import _lnumba as nb
-from ..poly import makers
+from .._lnumpy import f64
+from .._lnumpy import F64Array
+from .._typing import N_CoeffsTV as N_Coeffs
+from .._typing import N_DiffsTV as N_Diffs
+from .._typing import N_PointsTV as N_Points
+from .._typing import N_VarsTV as N_Vars
+from ..poly import make
 # ======================================================================
-# Hinting types
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from typing import TypeVar
-    from .._lnumpy import F64Array
-
-
-    N_Points = TypeVar('N_Points', int)
-    N_Diffs = TypeVar('N_Diffs', int)
-    N_Vars = TypeVar('N_Points', int)
-    N_Coeffs = TypeVar('N_Coeffs', int)
-else:
-    Callable = object
-    F64Array = object
-    N_Points = N_Diffs = N_Vars = N_Coeffs = object
-# ======================================================================
-@nb.njit
-def unpack(x_data: F64Array, y_data: F64Array, maker: ):
-    maker = makers[len(y[0]) - 1]
-# ======================================================================
-@nb.jitclass({})
-class Decompressed:
-    def __init__(self, x: F64Array[int], y: F64Array[int, int, int]):
-        maker = makers[len(y[0]) - 1]
+# @nb.njit
+# def unpack(x_data: F64Array, y_data: F64Array, maker):
+#     maker = makers[len(y[0]) - 1]
+# # ======================================================================
+# @nb.jitclass({})
+# class Decompressed:
+#     def __init__(self, x: F64Array[int], y: F64Array[int, int, int]):
+#         maker = makers[len(y[0]) - 1]
 
 # ======================================================================
 
 def unpack(x_data: F64Array[N_Points],
-           y_data: F64Array[N_Points, N_Diffs, N_Vars]):
-    len_diffs = len(y_data[0])
-    maker: Callable[[]] = makers[len_diffs]
+           y_data: F64Array[N_Points, N_Diffs, N_Vars]
+           ) -> list[PPoly]:
 
-    ppolys = []*len_diffs
+    n_points, n_diffs, n_vars = y_data.shape
+    n_coeffs = 2 * n_diffs
 
-    coeffs:
-    for index, _Dx in enumerate(Dx, start = 1):
-        maker()
+    maker = make.makers[n_diffs - 1]
 
-    for _ in range(1, len_diffs):
+    ppolys: list[PPoly] = []*n_diffs
 
-    return [PPoly(coefficients, x)
+    xb = x_data[0]
+    yb = x_data[0]
+
+    coeffs = np.zeros((n_coeffs, n_points-1, n_vars), f64)
+    coeffs_tmp = np.zeros((n_coeffs, n_vars), f64)
+    for index, (xc, yc) in enumerate(zip(x_data[1:], y_data[1:]), start = -1):
+        xa = xb
+        xb = xc
+        ya = yb
+        yb = yc
+        Dx = xb-xa
+        maker(Dx, ya, yb, coeffs_tmp)
+        coeffs[:, index, :] = coeffs_tmp
+    ppolys[0] = PPoly(coeffs, x_data)
+    for index in range(1, n_diffs):
+        ppolys[index] = ppolys[index-1].derivative()
+    return ppolys

@@ -15,11 +15,34 @@ class Test_to_out:
         out = np.zeros(shape_out, dtype = np.float64)
         diff.to_out(np.ones(coeffs_shape, dtype = np.float64), out)
 # ======================================================================
-class Test_in_place:
+
+class Test_in_place_coeffs_vars:
     # ------------------------------------------------------------------
-    def test_in_place(self):
+    def test_1d(self):
         coeffs = np.ones((4,1), dtype = np.float64)
-        diff.in_place(coeffs, 1)
+        diff.in_place_coeffs_vars(coeffs, 3)
         print(coeffs)
         assert np.all(coeffs == np.array(((3,), (2,), (1,), (1,)), dtype = np.float64))
-        assert False
+    # ------------------------------------------------------------------
+    def test_2d(self):
+        coeffs = np.ones((4,2), dtype = np.float64)
+        diff.in_place_coeffs_vars(coeffs, 3)
+        print(coeffs)
+        assert np.all(coeffs == np.array(((3, 3), (2, 2), (1, 1), (1, 1)),
+                                         dtype = np.float64))
+# ======================================================================
+class Test_in_place_vars_coeffs:
+    # ------------------------------------------------------------------
+    def test_1d(self):
+        coeffs = np.ones((1,4), dtype = np.float64)
+        diff.in_place_vars_coeffs(coeffs, 3)
+        print(coeffs)
+        assert np.all(coeffs == np.array(((3, 2, 1, 1,)), dtype = np.float64))
+    # ------------------------------------------------------------------
+    def test_2d(self):
+        coeffs = np.ones((2,4), dtype = np.float64)
+        diff.in_place_vars_coeffs(coeffs, 3)
+        print(coeffs)
+        assert np.all(coeffs == np.array(((3, 2, 1, 1),
+                                          (3, 2, 1, 1)), dtype = np.float64))
+    # ------------------------------------------------------------------
