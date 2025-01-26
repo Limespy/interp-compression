@@ -1,3 +1,4 @@
+"""Polynomial handling utilities."""
 from importlib import import_module
 from sys import modules as _modules
 from typing import TYPE_CHECKING

@@ -20,10 +20,9 @@ YSingle = NotImplemented
 
 YLineSingle = nb.A(1)
 YDiffSingle = nb.A(2)
-
 # ----------------------------------------------------------------------
 Excess = nb.f32
-Index = nb.size_t
+Index = nb.up
 fIndex = nb.f32
 # ----------------------------------------------------------------------
 Coeffs = nb.A(2)

@@ -117,7 +117,7 @@ else:
 
     Any = object
 
-    Inty = Uinty = Floaty = object
+    Inty = UInty = Floaty = object
 
     Shape0 = Shape1 = Shape2 = Shape3 = Shape4 = Shape5 = type
     Shape6 = Shape7 = type

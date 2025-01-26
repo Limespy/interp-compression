@@ -21,7 +21,7 @@ if sys.platform == 'win32':
 else:
     import os
 
-    os.nice(1)
+    os.nice(-20 - os.nice())
 # ======================================================================
 N_VARS = 100
 N_POINTS = 1000
@@ -54,13 +54,13 @@ def _import():
 
     # First
     t0 = perf_counter()
-    from limesqueezer.stream.diff import Diff3
+    from limesqueezer.taylor import Sequential3_64
     result, prefix = eng_round(perf_counter() - t0)
     results[f'First [{prefix}s]'] = result
 
     # Min
     def do_import():
-        from limesqueezer.stream.diff import Diff3
+        from limesqueezer.taylor import Sequential3_64
 
     result, prefix = eng_round(run_timed(do_import,
                                          n_samples = 250, t_min_s = 0.002
@@ -68,50 +68,13 @@ def _import():
     results[f'Min [{prefix}s]'] = result
     return results
 # ======================================================================
-def _diff():
-    from limesqueezer.poly import diff
-    results = {}
-    coeffs = np.full((Y_RAW.shape[1], 2 * Y_RAW.shape[0]), 1e-50, np.float64)
-    result, prefix = eng_round(run_timed(diff.in_place_vars_coeffs,
-                                         n_samples = 250, t_min_s = 0.002
-                                         )(coeffs.copy(), 7))
-    results[f'vars, coeffs [{prefix}s]'] = result
-
-    coeffs = np.full((2 * Y_RAW.shape[0], Y_RAW.shape[1]), 1e-50, np.float64)
-    result, prefix = eng_round(run_timed(diff.in_place_coeffs_vars,
-                                         n_samples = 250, t_min_s = 0.002
-                                         )(coeffs.copy(), 7))
-    results[f'coeffs, vars [{prefix}s]'] = result
-    return results
-# ======================================================================
-def _make():
-    from limesqueezer.poly import make
-    results = {}
-    ia = 1
-    ib = 10
-    xa = X_RAW[ia]
-    xb = X_RAW[ib]
-    ya = Y_RAW[ia]
-    yb = Y_RAW[ib]
-    Dx = xa - xb
-
-    coeffs = np.zeros((2 * yb.shape[0], yb.shape[1]))
-    result, prefix = eng_round(run_timed(make.omake7, n_samples = 250, t_min_s = 0.002
-                                         )(Dx, ya, yb, coeffs))
-    results[f'old [{prefix}s]'] = result
-    coeffs = np.zeros((yb.shape[1], 2 * yb.shape[0]))
-    result, prefix = eng_round(run_timed(make.make7, n_samples = 250, t_min_s = 0.002
-                                         )(Dx, ya, yb, coeffs))
-    results[f'new [{prefix}s]'] = result
-    return results
-# ======================================================================
 def _diffstream():
-    from limesqueezer.stream.diff import Diff3
-    from limesqueezer.stream.diff import Diff3Direct
+    import limesqueezer as ls
+    from limesqueezer.taylor import Sequential3_64
+    # from limesqueezer.taylor._experimental import Diff3Direct
     results = {}
-
     # ------------------------------------------------------------------
-    def compress(stream: Diff3):
+    def compress(stream: Sequential3_64):
         stream.open(X_RAW[0], Y_RAW[0])
 
         for index in range(1, len(X_RAW)):
@@ -120,17 +83,19 @@ def _diffstream():
         stream.close()
 
 
-    for Stream in (Diff3, Diff3Direct):
+    for Stream in (Sequential3_64, ): # Diff3Direct):
         subresults: dict[str, dict[str, float]] = {'Initialisation': {},
                       'Factory': {},
                       'Compression': {}}
 
-        @nb.njit
         def factory(rtol,
                     atol,
                     preallocate: int = 322 # From Lucas sequence
-                            ) -> Diff3:
+                            ) -> Sequential3_64:
             return Stream(rtol, atol, preallocate)
+
+        if ls._lnumba.IS_NUMBA:
+            factory = nb.njit(factory)
 
         # Initialisation
         ## First
@@ -169,24 +134,60 @@ def _diffstream():
 # ======================================================================
 def _compress():
     import time
-    from limesqueezer.stream.diff import compress_diff3
+    from limesqueezer.taylor import batch3_64
     results: dict[str, dict[str, float]] = {'diff': {}}
-
-
 
     # First
     t0 = time.perf_counter()
-    xc, yc = compress_diff3(X_RAW, Y_RAW, RTOL, ATOL)
+    xc, yc = batch3_64(X_RAW, Y_RAW, RTOL, ATOL)
     result, prefix = eng_round(time.perf_counter() - t0)
     results['diff'][f'First [{prefix}s]'] =  result
 
     # Min
-    result, prefix = eng_round(run_timed(compress_diff3,
+    result, prefix = eng_round(run_timed(batch3_64,
                                          t_min_s = 0.02, n_samples = 25
                                          )(X_RAW, Y_RAW, RTOL, ATOL))
 
     results['diff'][f'Min [{prefix}s]'] = result
     results['diff'][f'Ratio'] = N_POINTS / len(xc)
+    return results
+# ======================================================================
+def _diff():
+    from limesqueezer.poly import diff
+    results = {}
+    coeffs = np.full((Y_RAW.shape[1], 2 * Y_RAW.shape[0]), 1e-50, np.float64)
+    result, prefix = eng_round(run_timed(diff.in_place_vars_coeffs,
+                                         n_samples = 250, t_min_s = 0.002
+                                         )(coeffs.copy(), 7))
+    results[f'vars, coeffs [{prefix}s]'] = result
+
+    coeffs = np.full((2 * Y_RAW.shape[0], Y_RAW.shape[1]), 1e-50, np.float64)
+    result, prefix = eng_round(run_timed(diff.in_place_coeffs_vars,
+                                         n_samples = 250, t_min_s = 0.002
+                                         )(coeffs.copy(), 7))
+    results[f'coeffs, vars [{prefix}s]'] = result
+    return results
+# ======================================================================
+def _make():
+    from limesqueezer.poly.make import make7_64
+    from limesqueezer.poly._experimental import omake7
+    results = {}
+    ia = 1
+    ib = 10
+    xa = X_RAW[ia]
+    xb = X_RAW[ib]
+    ya = Y_RAW[ia]
+    yb = Y_RAW[ib]
+    Dx = xa - xb
+
+    coeffs = np.zeros((2 * yb.shape[0], yb.shape[1]))
+    result, prefix = eng_round(run_timed(omake7, n_samples = 250, t_min_s = 0.002
+                                         )(Dx, ya, yb, coeffs))
+    results[f'old [{prefix}s]'] = result
+    coeffs = np.zeros((yb.shape[1], 2 * yb.shape[0]))
+    result, prefix = eng_round(run_timed(make7_64, n_samples = 250, t_min_s = 0.002
+                                         )(Dx, ya, yb, coeffs))
+    results[f'new [{prefix}s]'] = result
     return results
 # ======================================================================
 def main() -> BenchmarkResultsType:
@@ -195,8 +196,9 @@ def main() -> BenchmarkResultsType:
     for subbenchmark in (_import,
                          _diffstream,
                          _compress,
+                         _diff,
                          _make,
-                         _diff):
+                         ):
         print(subbenchmark.__name__)
         results[subbenchmark.__name__.strip('_')] = subbenchmark()
     from limesqueezer import __version__

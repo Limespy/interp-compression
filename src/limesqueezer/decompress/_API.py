@@ -4,10 +4,10 @@ from scipy.interpolate import PPoly
 from .. import _lnumba as nb
 from .._lnumpy import f64
 from .._lnumpy import F64Array
-from .._typing import N_CoeffsTV as N_Coeffs
-from .._typing import N_DiffsTV as N_Diffs
-from .._typing import N_PointsTV as N_Points
-from .._typing import N_VarsTV as N_Vars
+from .._types import N_CoeffsTV as N_Coeffs
+from .._types import N_DiffsTV as N_Diffs
+from .._types import N_PointsTV as N_Points
+from .._types import N_VarsTV as N_Vars
 from ..poly import make
 # ======================================================================
 # @nb.njit
@@ -28,7 +28,7 @@ def unpack(x_data: F64Array[N_Points],
     n_points, n_diffs, n_vars = y_data.shape
     n_coeffs = 2 * n_diffs
 
-    maker = make.makers[n_diffs - 1]
+    maker = make.makers_64[n_diffs - 1]
 
     ppolys: list[PPoly] = []*n_diffs
 

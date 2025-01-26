@@ -33,7 +33,7 @@ RTOL = np.full(Y_RAW.shape[1:], 0.01, dtype = np.float64)
 ATOL = np.full(Y_RAW.shape[1:], 0.01, dtype = np.float64)
 # ======================================================================
 def appending():
-    stream = ls.Diff3Stream(RTOL, ATOL)
+    stream = ls.taylor.Sequential3_64(RTOL, ATOL)
     stream.open(X_RAW[0], Y_RAW[0])
 
     for index in range(1, len(X_RAW)):

@@ -1,4 +1,6 @@
-import pytest
+from importlib import metadata
 
+import limesqueezer as ls
 # ======================================================================
-parametrize = pytest.mark.parametrize
+def test_version():
+    assert ls.__version__ == metadata.version(ls.__name__)

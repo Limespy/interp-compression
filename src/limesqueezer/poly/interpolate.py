@@ -1,31 +1,19 @@
 # from typing import Protocol
-from typing import TYPE_CHECKING
-from typing import TypeVar
+from typing import overload
 
 from .. import _lnumba as nb
-# import numpy as np
-# from .._typing import XSingle
-# from .._typing import N_Coeffs
+from .._lnumpy import f32
+from .._lnumpy import F32Array
+from .._lnumpy import f64
+from .._lnumpy import F64Array
+from .._types import Index
+from .._types import N_Coeffs
+from .._types import N_Points
+# from .._lnumpy import Inty
+# from .._lnumpy import UInty
 # ======================================================================
-# Hinting types
-if TYPE_CHECKING:
-    from typing import Literal as L
-    from typing import overload
-
-    from .._lnumpy import f64
-    from .._lnumpy import F64Array
-    from .._lnumpy import Floaty
-    from .._lnumpy import Inty
-    from .._lnumpy import UInty
-
-else:
-    f64 = Floaty = Inty = UInty = object
-    F64Array = L = tuple
-    overload = lambda x: x
-# ----------------------------------------------------------------------
-N_CoeffsTV = TypeVar('N_CoeffsTV', bound = int)
-N_PointsTV = TypeVar('N_PointsTV', bound = int)
-N_VarsTV = TypeVar('N_VarsTV', bound = int)
+_0_Index = Index(0)
+_1_Index = Index(1)
 # ----------------------------------------------------------------------
 # class Interpolator(Protocol[N_CoeffsTV, N_VarsTV]):
 #     @overload
@@ -73,22 +61,54 @@ nbdec = nb.njit
 #     out += coefficients[n]
 
 @overload
-def single(Dx: Floaty, coefficients: F64Array[N_CoeffsTV], n: Inty | UInty
-           ) -> f64:
+def single(Dx: f32, coefficients: F32Array[N_Coeffs], n: Index) -> f32:
     ...
 @overload
-def single(Dx: F64Array[N_PointsTV], coefficients: F64Array[N_CoeffsTV], n: int
+def single[N_PointsTV: N_Points]( # type: ignore[overload-cannot-match]
+    Dx: F32Array[N_PointsTV], coefficients: F32Array[N_Coeffs], n: Index
+           ) -> F32Array[N_PointsTV]:
+    ...
+@overload
+def single(Dx: f64, coefficients: F64Array[N_Coeffs], n: Index) -> f64: # type: ignore[overload-cannot-match]
+    ...
+@overload
+def single[N_PointsTV: N_Points]( # type: ignore[overload-cannot-match]
+    Dx: F64Array[N_PointsTV], coefficients: F64Array[N_Coeffs], n: Index
            ) -> F64Array[N_PointsTV]:
     ...
 @nb.njit
-def single(Dx, coefficients, n):
-    """Interpolates degree n polynomial i.e. n+ 1 parameters."""
-    out = Dx * coefficients[0]
-    for i in range(1, n):
-        out += coefficients[i]
+def single(Dx, coefficients, n_coeffs):
+    """Interpolates degree n polynomial i.e. n + 1 parameters. Computes
+    polynomial c[0] * x^{n-1} + c[1] x^{n-2} + ... + c[n]
+
+    Parameters
+    ----------
+    Dx : x
+        _description_
+    coefficients : _type_
+        _description_
+    n_coeffs : _type_
+        Number of coefficients to be used
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    # Method is:
+    #
+    # - P_0(x) = c[0]
+    # - P_n(x) = P_{n-1}(x) * x + c[n]
+
+    out = Dx * coefficients[_0_Index]
+    i_coeff = _1_Index
+    while i_coeff != n_coeffs:
+        out += coefficients[i_coeff]
         out *= Dx
-    out += coefficients[n]
+        i_coeff += _1_Index
+    out += coefficients[i_coeff]
     return out
+single
 # ======================================================================
 # @nbdec
 # def poly1(Dx: F64Array | float, coefficients: F64Array) -> F64Array:

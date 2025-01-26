@@ -5,26 +5,11 @@ import numba as nb
 from numba import core # type: ignore[attr-defined]
 from numba import errors # type: ignore[attr-defined]
 from numba.core.types.containers import ListType
-from numba.typed import List
 from numba.experimental.jitclass.base import JitClassType
+from numba.typed import List
 # ======================================================================
-types = nb.types # type: ignore[attr-defined]
-void = types.void
-none = types.none
-
-njit = nb.njit # type: ignore[attr-defined]
-
-_jitclass = nb.experimental.jitclass # type: ignore[attr-defined]
-
-size_t = nb.size_t # type: ignore[attr-defined]
-# ======================================================================
-
-warnings.filterwarnings('ignore',
-                        '.*unsafe cast from uint64 to int64. Precision may be lost.',
-                        errors.NumbaTypeSafetyWarning)
-warnings.filterwarnings('ignore',
-                        '.*irst-class function type feature is experimental',
-                        errors.NumbaExperimentalFeatureWarning)
+types = nb.types
+PASS_THROUGH = lambda x: x
 # ======================================================================
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -32,27 +17,27 @@ if TYPE_CHECKING:
     from typing import overload
     from typing import TypeAlias
 
+    from numba.types import Type
     import numpy as np
 
-    f32: TypeAlias = np.float32
-    f64: TypeAlias = np.float64
+    from ._lnumpy import f32
+    from ._lnumpy import f64
+    from ._lnumpy import i16
+    from ._lnumpy import i32
+    from ._lnumpy import i64
+    from ._lnumpy import u16
+    from ._lnumpy import u32
+    from ._lnumpy import u64
+    from ._lnumpy import up
 
-    i16: TypeAlias = np.int16
-    i32: TypeAlias = np.int32
-    i64: TypeAlias = np.int64
-
-    u16: TypeAlias = np.uint16
-    u32: TypeAlias = np.uint32
-    u64: TypeAlias = np.uint64
-
-    Type: TypeAlias = core.types.Type
     Signature: TypeAlias = core.typing.templates.Signature
 
     SpecType: TypeAlias = dict[str, Type] | Sequence[tuple[str, Type]]
 
 else:
     Callable = tuple
-    overload = lambda x: x
+    overload = PASS_THROUGH
+
     f32 = nb.f4
     f64 = nb.f8
 
@@ -63,20 +48,49 @@ else:
     u16 = nb.u2
     u32 = nb.u4
     u64 = nb.u8
+    up = nb.uintp
 
     Type = Signature = SpecType = object
 # ======================================================================
+void = types.void
+none = types.none
+
+_jitclass = nb.experimental.jitclass # type: ignore[attr-defined]
+
+size_t = nb.size_t # type: ignore[attr-defined]
+# ======================================================================
+warnings.filterwarnings('ignore',
+                        '.*unsafe cast from uint64 to int64. Precision may be lost.',
+                        errors.NumbaTypeSafetyWarning)
+warnings.filterwarnings('ignore',
+                        '.*irst-class function type feature is experimental',
+                        errors.NumbaExperimentalFeatureWarning)
+# ======================================================================
+IS_NUMBA = True
 IS_CACHE = True
 IS_FASTMATH = True
 IS_PARALLEL = False
-
+# ======================================================================
+if TYPE_CHECKING or IS_NUMBA:
+    njit = nb.njit # type: ignore[attr-defined]
+else:
+    def njit(signature_or_function = None,
+             locals = None,
+             cache = False,
+             pipeline_class = None,
+             boundscheck = None,
+             **_):
+        return (signature_or_function
+                if callable(signature_or_function)
+                else PASS_THROUGH)
+# ======================================================================
 njitC = njit(cache = IS_CACHE)
 njitF = njit(fastmath = IS_FASTMATH)
 njitP = njit(parallel = IS_PARALLEL)
 njitCF = njit(cache = IS_CACHE, fastmath = IS_FASTMATH)
 # ======================================================================
-def A(dim: int = 1, dtype = f64) -> Type:
-    return types.Array(dtype, dim, 'C')
+def A(dim: int = 1, dtype = f64, ro = False) -> Type:
+    return types.Array(dtype, dim, 'C', ro)
 # ----------------------------------------------------------------------
 def ARO(dim: int = 1, dtype = f64) -> Type:
     return types.Array(dtype, dim, 'C', readonly = True)
@@ -86,7 +100,6 @@ _JITCLASS_UNSUPPORTED = {'__init_subclass__',
                          '__type_params__',
                          '__orig_bases__',
                          '__parameters__'}
-
 def clean[T](cls: type[T]) -> type[T]:
     _dict: dict[str, object] = {}
     for base in reversed(cls.__mro__[:-1]):
@@ -103,13 +116,15 @@ def clean[T](cls: type[T]) -> type[T]:
 
 @overload
 def jitclass[T](cls_or_spec: type[T] = ..., spec: SpecType | None = ..., /
-                     ) -> JitClassType[T]:
+                     ) -> type[T]:
     ...
 @overload
 def jitclass[T](cls_or_spec: SpecType | None = ..., spec: None = ..., /
-                     ) -> Callable[[type[T]], JitClassType[T]]:
+                     ) -> Callable[[type[T]], type[T]]:
     ...
-def jitclass(cls_or_spec = None, spec = None, /):
-    return _jitclass(cls_or_spec, spec)
-
-jitclass
+if TYPE_CHECKING or IS_NUMBA:
+    def jitclass(cls_or_spec = None, spec = None, /):
+        return _jitclass(cls_or_spec, spec)
+else:
+    def jitclass(cls_or_spec = None, spec = None, /):
+        return cls_or_spec if isinstance(cls_or_spec, type) else PASS_THROUGH

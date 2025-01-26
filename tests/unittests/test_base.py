@@ -1,13 +1,16 @@
 import numpy as np
 import pytest
+from limesqueezer import _base
 from limesqueezer import _lnumba as nb
-from limesqueezer.stream import _base
 # ======================================================================
 parametrize = pytest.mark.parametrize
 
 # ======================================================================
 class Test_XYDynArray:
     # ------------------------------------------------------------------
+    @pytest.mark.filterwarnings(
+        'ignore:overflow encountered in scalar add:RuntimeWarning',
+        'ignore:overflow encountered in scalar subtract:RuntimeWarning')
     @parametrize(('n_dim',), ((1,),(2,)))
     def test_init(self, n_dim: int):
         cls = _base._XYDynArray
@@ -29,6 +32,8 @@ class Test_XYDynArray:
         assert len(a) == 0
         assert type(a.lenc) == type(a.lenb) == type(len(a)) == int
     # ------------------------------------------------------------------
+    @pytest.mark.filterwarnings(
+        'ignore:overflow encountered in scalar subtract:RuntimeWarning')
     def test_default_preallocation(self):
         cls = _base._XYDynArray
         shape = (1, 1)
@@ -40,6 +45,10 @@ class Test_XYDynArray:
     # ------------------------------------------------------------------
 class Test_StreamBase:
     # ------------------------------------------------------------------
+    @pytest.mark.filterwarnings(
+            'ignore:base class method:limesqueezer.exceptions.NotImplementedWarning',
+            'ignore:overflow encountered in scalar add:RuntimeWarning',
+            'ignore:overflow encountered in scalar subtract:RuntimeWarning')
     def test_init(self):
         shape = (1, 1)
         preallocate = 100
