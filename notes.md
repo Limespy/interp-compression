@@ -326,3 +326,29 @@ Later tolerance will be implemented as smooth function of $absolute$ and $relati
 $$
 tolerance = \frac{absolute}{falloff \cdot |y| + 1} + relative \cdot |y|
 $$
+
+For case of monotonic tolerance
+
+$$
+\frac{d tolerance}{d y} (y = 0) = 0
+$$
+
+so
+
+$$
+\frac{-falloff \cdot absolute}{(falloff \cdot 0 + 1)^2} + relative = 0
+$$
+$$
+-falloff \cdot absolute + relative = 0
+$$
+$$
+falloff  = \frac{relative}{absolute}
+$$
+
+So the tolerance equation becomes
+$$
+tolerance = \frac{absolute}{\frac{relative}{absolute} \cdot |y| + 1} + relative \cdot |y|
+$$
+$$
+tolerance = \frac{absolute^2}{relative \cdot |y| + absolute} + relative \cdot |y|
+$$
