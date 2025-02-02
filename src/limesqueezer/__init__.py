@@ -8,9 +8,7 @@ from ._API import *
 if TYPE_CHECKING:
     from types import ModuleType
 
-    from . import decompress
     from . import line
-    from . import poly
     from . import taylor
 else:
     ModuleType = object
@@ -18,7 +16,7 @@ else:
 __version__ = '2.0.0'
 # ======================================================================
 def __getattr__(name: str) -> ModuleType | str:
-    if name in {'decompress', 'line', 'poly', 'taylor'}:
+    if name in {'line', 'taylor'}:
         module = import_module(f'.{name}', __package__)
         setattr(_modules[__package__], name, module)
         return module

@@ -10,14 +10,9 @@ f32 = nb.f32
 f64 = nb.f64
 _1_fIndex = fIndex(1.)
 # ======================================================================
-@overload
-def linear(x0: f32, y0: f32, x1: f32, y1: f32) -> f32:
-    ...
-@overload
-def linear(x0: f64, y0: f64, x1: f64, y1: f64) -> f64: # type: ignore[overload-cannot-match]
-    ...
 @nb.njit
-def linear(x0, y0, x1, y1):
+def linear[DType: (f32, f64)](x0: DType, y0: DType, x1: DType, y1: DType
+                              ) -> DType:
     """Calculates x such the f(x) = 0 from two points ((x0, y0), (x1, y1))
     using a line i.e. first degree polynomial P(x) = p1 * x + p0. Depending on
     how the endpoints are selected, is a secant method step or a regula falsi
@@ -40,15 +35,9 @@ def linear(x0, y0, x1, y1):
         _description_
     """
     return (x1 * y0 - x0 * y1) / (y0 - y1)
-# ----------------------------------------------------------------------
-@overload
-def poly(x0: f32, y0: f32, x1: f32, y1: f32, n: f32) -> f32:
-    ...
-@overload
-def poly(x0: f64, y0: f64, x1: f64, y1: f64, n: f64) -> f64: # type: ignore[overload-cannot-match]
-    ...
 @nb.njit
-def poly(x0, y0, x1, y1, n):
+def poly[DType: (f32, f64)
+         ](x0: DType, y0: DType, x1: DType, y1: DType, n: DType) -> DType:
     """Calculates x such the f(x) = 0 from two points ((x0, y0), (x1, y1))
     using a polynomial of form P(x) = p1 * x^n + p0.
 
@@ -90,7 +79,7 @@ def shift_rf(x_low: f32, x_high: f32, estimate: f32) -> f32:
 def shift_rf(x_low: f64, x_high: f64, estimate: f64) -> f64: # type: ignore[overload-cannot-match]
     ...
 @nb.njit
-def shift_rf(x_low,  x_high, estimate):
+def shift_rf[DType: (f32, f64)](x_low: DType,  x_high: DType, estimate: DType):
     diff_to_low = estimate - x_low
     diff_to_high = x_high - estimate
     return (estimate + diff_to_low * 0.5

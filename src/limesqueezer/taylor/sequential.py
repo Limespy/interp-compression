@@ -4,7 +4,6 @@ from typing import TypeAlias
 from .. import _lnumba as nb
 from .. import _root
 from .._base import _StreamBase
-from .._errorfunctions import _MaxAbs_Taylor
 from .._lnumpy import F64Array
 from .._types import Excess
 from .._types import fIndex
@@ -16,13 +15,14 @@ from .._types import YDiff0
 from .._types import YDiff1
 from .._types import YDiff2
 from .._types import YDiff3
-from ..poly import make
+from ._excessbases import _MaxAbs
+from .poly import make
 # ======================================================================
 _1_Index = Index(1)
 # ======================================================================
 class _Sequential[N_DiffsTV: N_Diffs, N_VarsTV: N_Vars
-            ](_StreamBase[N_DiffsTV, N_VarsTV],
-              _MaxAbs_Taylor[N_DiffsTV, N_VarsTV]):
+                  ](_StreamBase[N_DiffsTV, N_VarsTV],
+                    _MaxAbs[N_DiffsTV, N_VarsTV]):
 
     # Value constraints
     #

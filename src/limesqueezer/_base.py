@@ -2,7 +2,7 @@ from warnings import filterwarnings
 
 import numpy as np
 
-from ._errorfunctions import _Errorclass
+from ._excessbases import _Excessclass
 from ._lnumpy import f64
 from ._lnumpy import F64Array
 from ._lnumpy import inf64

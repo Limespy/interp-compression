@@ -17,8 +17,8 @@ else:
     ModuleType = object
 # ======================================================================
 def __getattr__(name: str) -> ModuleType:
-    if name not in ('diff', 'interpolate', 'make'):
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-    module = import_module(f'.{name}', __package__)
-    setattr(_modules[__package__], name, module)
-    return module
+    if name in {'diff', 'interpolate', 'make'}:
+        module = import_module(f'.{name}', __package__)
+        setattr(_modules[__package__], name, module)
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

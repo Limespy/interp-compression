@@ -1,7 +1,6 @@
 from .. import _lnumba as nb
 from .. import _root
 from .._base import _StreamBase
-from .._errorfunctions import _MaxAbs_Line
 from .._lnumpy import f64
 from .._lnumpy import F64Array
 from .._types import Excess
@@ -9,14 +8,14 @@ from .._types import fIndex
 from .._types import Index
 from .._types import N_Vars
 from .._types import YLine
+from ._excessbases import _MaxAbs
 # ======================================================================
 _0_Index = Index(0)
 _1_Index = Index(1)
 # ======================================================================
 @nb.jitclass
 @nb.clean
-class Sequential_64(_StreamBase[N_Vars],
-           _MaxAbs_Line[N_Vars]):
+class Sequential_64(_StreamBase[N_Vars], _MaxAbs[N_Vars]):
     _y: YLine
     # ------------------------------------------------------------------
     def __init__(self,
